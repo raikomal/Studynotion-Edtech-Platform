@@ -1,43 +1,48 @@
-import { useEffect, useState } from "react"
-import { AiOutlineMenu, AiOutlineShoppingCart } from "react-icons/ai"
-import { BsChevronDown } from "react-icons/bs"
-import { useSelector } from "react-redux"
-import { Link, matchPath, useLocation } from "react-router-dom"
+import { useEffect, useState } from "react";
+import {
+  AiOutlineClose,
+  AiOutlineMenu,
+  AiOutlineShoppingCart,
+} from "react-icons/ai";
+import { BsChevronDown } from "react-icons/bs";
+import { useSelector } from "react-redux";
+import { Link, matchPath, useLocation } from "react-router-dom";
 
-import logo from "../../assets/Logo/Logo-Full-Light.png"
-import { NavbarLinks } from "../../data/navbar-links"
-import { apiConnector } from "../../services/apiconnector"
-import { categories } from "../../services/apis"
-import { ACCOUNT_TYPE } from "../../utils/constants"
-import ProfileDropdown from "../core/Auth/ProfileDropDown"
+import logo from "../../assets/Logo/Logo-Full-Light.png";
+import { NavbarLinks } from "../../data/navbar-links";
+import { apiConnector } from "../../services/apiconnector";
+import { categories } from "../../services/apis";
+import { ACCOUNT_TYPE } from "../../utils/constants";
+import ProfileDropdown from "../core/Auth/ProfileDropDown";
 
 function Navbar() {
-  const { token } = useSelector((state) => state.auth)
-  const { user } = useSelector((state) => state.profile)
-  const { totalItems } = useSelector((state) => state.cart)
-  const location = useLocation()
+  const { token } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.profile);
+  const { totalItems } = useSelector((state) => state.cart);
+  const location = useLocation();
 
-  const [subLinks, setSubLinks] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [subLinks, setSubLinks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    ;(async () => {
-      setLoading(true)
+    (async () => {
+      setLoading(true);
       try {
-        const res = await apiConnector("GET", categories.CATEGORIES_API)
-        setSubLinks(res.data.data)
+        const res = await apiConnector("GET", categories.CATEGORIES_API);
+        setSubLinks(res.data.data);
       } catch (error) {
-        console.log("Could not fetch Categories.", error)
+        console.log("Could not fetch Categories.", error);
       }
-      setLoading(false)
-    })()
-  }, [])
+      setLoading(false);
+    })();
+  }, []);
 
   // console.log("sub links", subLinks)
 
   const matchRoute = (route) => {
-    return matchPath({ path: route }, location.pathname)
-  }
+    return matchPath({ path: route }, location.pathname);
+  };
 
   return (
     <div
@@ -70,7 +75,7 @@ function Navbar() {
                         <div className="absolute left-[50%] top-0 -z-10 h-6 w-6 translate-x-[80%] translate-y-[-40%] rotate-45 select-none rounded bg-richblack-5"></div>
                         {loading ? (
                           <p className="text-center">Loading...</p>
-                        ) : (subLinks && subLinks.length) ? (
+                        ) : subLinks && subLinks.length ? (
                           <>
                             {subLinks
                               ?.filter(
@@ -140,12 +145,71 @@ function Navbar() {
           )}
           {token !== null && <ProfileDropdown />}
         </div>
-        <button className="mr-4 md:hidden">
+        <button className="mr-4 md:hidden" onClick={() => setIsMenuOpen(true)}>
           <AiOutlineMenu fontSize={24} fill="#AFB2BF" />
         </button>
+
+        {isMenuOpen && (
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-50">
+            <div className="fixed left-0 top-0 z-50 h-full w-64 bg-richblack-900 p-6 text-white shadow-lg">
+              {/* Close Button */}
+              <button
+                className="absolute right-4 top-4"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <AiOutlineClose fontSize={24} />
+              </button>
+
+              {/* Navigation Links */}
+              <ul className="mt-8 flex flex-col gap-4">
+                {NavbarLinks.map((link, index) => (
+                  <li key={index} onClick={() => setIsMenuOpen(false)}>
+                    <Link to={link.path} className="block text-lg">
+                      {link.title}
+                    </Link>
+                  </li>
+                ))}
+
+                {/* User Authentication Links */}
+                {!token ? (
+                  <>
+                    <Link
+                      to="/login"
+                      className="block text-lg"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Log in
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className="block text-lg"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Sign up
+                    </Link>
+                  </>
+                ) : (
+                  <ProfileDropdown />
+                )}
+
+                {/* Cart for Non-Instructors */}
+                {user && user.accountType !== ACCOUNT_TYPE.INSTRUCTOR && (
+                  <Link to="/dashboard/cart" className="relative block text-lg">
+                    Cart
+                    {totalItems > 0 && (
+                      <span className="absolute ml-2 h-5 w-5 rounded-full bg-yellow-500 text-center text-xs font-bold text-black">
+                        {totalItems}
+                      </span>
+                    )}
+                  </Link>
+                )}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Navbar
+export default Navbar;
